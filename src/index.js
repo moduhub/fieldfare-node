@@ -35,7 +35,7 @@ export function terminate() {
     LocalHost.terminate();
 }
 
-export function setupBasicCollectionTypes() {
+function setupBasicCollectionTypes() {
     Collection.registerType('list', ChunkList);
     Collection.registerType('set', ChunkSet);
     Collection.registerType('map', ChunkMap);
