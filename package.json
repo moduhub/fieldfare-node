@@ -1,0 +1,41 @@
+{
+  "name": "@fieldfare/node",
+  "version": "1.0.0",
+  "description": "Initialization code to run the Fieldfare framework on Node.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "prepare": "yalc retreat --all",
+    "postpack": "yalc restore --all"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/moduhub/fieldfare-node.git"
+  },
+  "keywords": [
+    "fieldfare",
+    "node",
+    "manager",
+    "library"
+  ],
+  "exports": {
+    ".": "./src/index.js"
+  },
+  "peerDependencies": {
+    "@fieldfare/core": "^1.0.0"
+  },
+  "author": "Adan Kvitschal",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/moduhub/fieldfare-node/issues"
+  },
+  "homepage": "https://github.com/moduhub/fieldfare-node#readme",
+  "dependencies": {
+    "@fieldfare/core": "file:.yalc/@fieldfare/core",
+    "level": "^8.0.0",
+    "websocket": "^1.0.34"
+  },
+  "files": [
+    "src"
+  ]
+}

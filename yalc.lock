@@ -1,0 +1,10 @@
+{
+  "version": "v1",
+  "packages": {
+    "@fieldfare/core": {
+      "signature": "48e22317bccf21b3698ee43fed2916b4",
+      "file": true,
+      "replaced": "^1.0.0"
+    }
+  }
+}
