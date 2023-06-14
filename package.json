@@ -31,7 +31,7 @@
   },
   "homepage": "https://github.com/moduhub/fieldfare-node#readme",
   "dependencies": {
-    "@fieldfare/core": "^1.0.0",
+    "@fieldfare/core": "^1.1.0",
     "level": "^8.0.0",
     "websocket": "^1.0.34"
   },
