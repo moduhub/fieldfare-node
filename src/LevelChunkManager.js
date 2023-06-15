@@ -12,7 +12,8 @@ export class LevelChunkManager extends ChunkManager {
 
     constructor() {
         super();
-        this.db = new Level('chunk', { valueEncoding: 'json' })
+        this.completeChunks = new Level('chunk/complete', { valueEncoding: 'json' })
+        this.incompleteChunks = new Level('chunk/incomplete', { valueEncoding: 'json' })
     }
 
     static init() {
@@ -25,7 +26,7 @@ export class LevelChunkManager extends ChunkManager {
 
     async report() {
         var starttime = performance.now();
-        const iterator = this.db.keys();
+        const iterator = this.completeChunks.keys();
         var numEntries = 0;
         for await (const key of iterator) numEntries++;
         var endtime = performance.now();
@@ -49,27 +50,51 @@ export class LevelChunkManager extends ChunkManager {
             + " ms)";
     }
 
-    async storeChunkContents(contents) {
-        //logger.log('info', "LevelChunkManager storing res: " + contents);
-        const identifier = await ChunkingUtils.generateIdentifierForData(contents);
-        await this.db.put(identifier, contents);
-        return identifier;
+    async storeChunkContents(base64data) {
+        let complete = true;
+        let depth = 0;
+        let size = base64data.length;
+        if(size > 1024) {
+            throw Error('Chunk size limit exceeded');
+        }
+        const childrenIdentifiers = await ChunkingUtils.getChildrenIdentifiers(base64data);
+        for(const childIdentifier of childrenIdentifiers) {
+            const childChunk = await this.completeChunks.get(childIdentifier);
+            if(!childChunk) {
+                complete = false;
+                break;
+            }
+            size += childChunk.size;
+            depth = Math.max(depth, childChunk.depth+1);
+        }
+        const identifier = await ChunkingUtils.generateIdentifierForData(base64data);
+        if(complete) {
+            await this.completeChunks.put(identifier, {base64data, depth, size});
+        } else {
+            await this.incompleteChunks.put(identifier, base64data);
+            depth = undefined;
+            size = undefined;
+        }
+        return {identifier, base64data, complete, depth, size};
     }
 
     async getChunkContents(identifier) {
-        //logger.log('info', "LevelChunkManager fetching res: " + identifier);
-        var contents;
-        try {
-            contents = await this.db.get(identifier);
-        } catch (error) {
-            var newError = Error('Resource fetch failed: ' + {cause: error});
-            if (error.notFound === true) {
-                newError.name = 'NOT_FOUND_ERROR';
-                contents = undefined;
-            }
-            throw newError;
+        const completeChunk = await this.completeChunks.get(identifier);
+		if(completeChunk) {
+            return {
+                base64data: completeChunk.base64data,
+                complete: true,
+                depth: completeChunk.depth,
+                size: completeChunk.size
+            };
         }
-        return contents;
-    }
+        const base64data = await this.incompleteChunks.get(identifier);
+        if(!base64data) {
+            const error = Error('Chunk not found');
+            error.name = 'NOT_FOUND_ERROR';
+            throw error;
+        }
+		return {base64data, complete:false};
+	}
 
 }
