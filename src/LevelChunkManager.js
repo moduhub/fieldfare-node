@@ -59,8 +59,10 @@ export class LevelChunkManager extends ChunkManager {
         }
         const childrenIdentifiers = await ChunkingUtils.getChildrenIdentifiers(base64data);
         for(const childIdentifier of childrenIdentifiers) {
-            const childChunk = await this.completeChunks.get(childIdentifier);
-            if(!childChunk) {
+            let childChunk;
+            try {
+                childChunk = await this.completeChunks.get(childIdentifier);
+            } catch(error) {
                 complete = false;
                 break;
             }
@@ -79,22 +81,31 @@ export class LevelChunkManager extends ChunkManager {
     }
 
     async getChunkContents(identifier) {
-        const completeChunk = await this.completeChunks.get(identifier);
-		if(completeChunk) {
+        try {
+            const completeChunk = await this.completeChunks.get(identifier);
             return {
                 base64data: completeChunk.base64data,
                 complete: true,
                 depth: completeChunk.depth,
                 size: completeChunk.size
-            };
-        }
-        const base64data = await this.incompleteChunks.get(identifier);
-        if(!base64data) {
-            const error = Error('Chunk not found');
-            error.name = 'NOT_FOUND_ERROR';
+            }
+        } catch(error) {
+            if(error.notFound) {
+                try {
+                    const base64data = await this.incompleteChunks.get(identifier);
+                    return {base64data, complete:false};
+                } catch(error2) {
+                    if(error2.notFound) {
+                        //translate to a fieldfare expected error
+                        const newError = Error('Chunk not found');
+                        newError.name = 'NOT_FOUND_ERROR';
+                        throw newError;
+                    }
+                    throw error2;
+                }
+            }
             throw error;
         }
-		return {base64data, complete:false};
 	}
 
 }
