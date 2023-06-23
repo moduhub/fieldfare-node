@@ -62,4 +62,8 @@ export async function init() {
     await LocalHost.init(localKeypair);
     LocalHost.assignWebportTransceiver('ws', new WebServerTransceiver);
     LocalHost.assignWebportTransceiver('udp', new UDPTransceiver);
+    const bootWebports = await getBootWebports();
+    for(const webport of bootWebports) {
+        LocalHost.connectWebport(webport);
+    }
 }
