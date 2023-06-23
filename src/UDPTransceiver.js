@@ -30,8 +30,8 @@ export class UDPTransceiver extends Transceiver {
 			this.socket.close();
 		});
 		this.socket.on('message', (msg, rinfo) => {
-			logger.debug('[UDPTRX] Message from ' + rinfo.address + ':' + rinfo.port
-				+ ' (Lenght: ' + msg.length + ' bytes)');
+			// logger.debug('[UDPTRX] Message from ' + rinfo.address + ':' + rinfo.port
+			// 	+ ' (Lenght: ' + msg.length + ' bytes)');
 			const channelID = rinfo.address + ":" + rinfo.port;
 			logger.log('info', "ChannelID: " + channelID);
 			var assignedChannel;
@@ -97,15 +97,14 @@ export class UDPTransceiver extends Transceiver {
 	}
 
 	send(message, channel) {
-		for(const [key, value] of this.channelMap) {
-			console.log('key:' + JSON.stringify(key) + '   value:' + JSON.stringify(value));
-		}
+		// for(const [key, value] of this.channelMap) {
+		// 	console.log('key:' + JSON.stringify(key) + '   value:' + JSON.stringify(value));
+		// }
 		// logger.debug("[UDPTRX] outgoing message: " + JSON.stringify(message, message.jsonReplacer));
 		var messageBuffer = JSON.stringify(message, message.jsonReplacer);//message.toBuffer();
 		logger.debug('UDPTRX.send ' + messageBuffer.length + ' bytes to '
 			+ channel.info.address + ':'
 			+ channel.info.port);
-		//logger.log('info', "Message binary: " + Utils.ab2hex(messageBuffer));
 		this.socket.send(messageBuffer,
 				channel.info.port,
 				channel.info.address);
