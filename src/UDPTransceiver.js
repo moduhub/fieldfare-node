@@ -30,10 +30,7 @@ export class UDPTransceiver extends Transceiver {
 			this.socket.close();
 		});
 		this.socket.on('message', (msg, rinfo) => {
-			// logger.debug('[UDPTRX] Message from ' + rinfo.address + ':' + rinfo.port
-			// 	+ ' (Lenght: ' + msg.length + ' bytes)');
 			const channelID = rinfo.address + ":" + rinfo.port;
-			logger.log('info', "ChannelID: " + channelID);
 			var assignedChannel;
 			//Check if channel is already registered
 			if(this.channelMap.has(channelID)) {
@@ -59,6 +56,8 @@ export class UDPTransceiver extends Transceiver {
 			if(assignedChannel
 			&& assignedChannel.onMessageReceived) {
 				var messageObject = JSON.parse(msg);
+				logger.debug('[UDPTRX] RX '+msg.length+' bytes ' + rinfo.address + ':' + rinfo.port
+				+ ' (' + messageObject.service + ':' + messageObject.data?.id + ')');
 				assignedChannel.onMessageReceived(messageObject);
 			} else {
 				logger.error("[UDPtrx] no messageReceivedCallback defined");
@@ -102,9 +101,10 @@ export class UDPTransceiver extends Transceiver {
 		// }
 		// logger.debug("[UDPTRX] outgoing message: " + JSON.stringify(message, message.jsonReplacer));
 		var messageBuffer = JSON.stringify(message, message.jsonReplacer);//message.toBuffer();
-		logger.debug('UDPTRX.send ' + messageBuffer.length + ' bytes to '
+		logger.debug('[UDPTRX] TX ' + messageBuffer.length + ' bytes '
 			+ channel.info.address + ':'
-			+ channel.info.port);
+			+ channel.info.port
+			+ ' (' + message.service + ':' + message.data.id + ')');
 		this.socket.send(messageBuffer,
 				channel.info.port,
 				channel.info.address);
