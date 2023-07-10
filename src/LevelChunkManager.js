@@ -20,7 +20,10 @@ export class LevelChunkManager extends ChunkManager {
         const newInstance = new LevelChunkManager;
         ChunkManager.addInstance(newInstance);
         setInterval(async () => {
-            logger.debug(await newInstance.report());
+            const {newEntries, message} = await newInstance.report();
+            if(newEntries > 0) {
+                logger.debug(message);
+            }
         }, 10000);
     }
 
@@ -28,11 +31,13 @@ export class LevelChunkManager extends ChunkManager {
         var starttime = performance.now();
         const iterator = this.completeChunks.keys();
         var numEntries = 0;
+        let newEntries = 0;
         for await (const key of iterator) numEntries++;
         var endtime = performance.now();
         var deltaReport = "";
         if(this.lastNumEntries !== undefined) {
             deltaReport = ", "
+            newEntries = numEntries - this.lastNumEntries;
             if(numEntries >= this.lastNumEntries) {
                 deltaReport += (numEntries - this.lastNumEntries) + " more "
             } else {
@@ -41,13 +46,14 @@ export class LevelChunkManager extends ChunkManager {
             deltaReport += "since last report";
         }
         this.lastNumEntries = numEntries;
-        return "Level Resources Manager: "
+        const message = "Level Chunk Manager: "
             + numEntries
-            + " resources stored"
+            + " chunks stored"
             + deltaReport
             + ". (Search took "
             + (endtime - starttime)
             + " ms)";
+        return {newEntries, message};
     }
 
     async storeChunkContents(base64data) {
