@@ -26,7 +26,15 @@ export async function setupEnvironment() {
     if(!envUUID) {
         throw Error('Environment UUID not defined, please check your setup');
     }
-    const env =  new Environment(envUUID);
+    const envClassPath = await NVD.load('envClassPath');
+    let env;
+    if(!envClassPath) {
+        logger.warning('Environment class path not defined, using basic environment');
+        env =  new Environment(envUUID);
+    } else {
+        const {EnvironmentClass} = await import('file:' + envClassPath);
+        env =  new EnvironmentClass(envUUID);
+    }
     await env.init();
     return env;
 }
