@@ -7,7 +7,7 @@
 
 import {
     LocalHost, NVD, cryptoManager, Environment,
-    Collection, ChunkList, ChunkSet, ChunkMap
+    Collection, ChunkList, ChunkSet, ChunkMap, logger
 } from '@fieldfare/core'
 import { LevelChunkManager } from './LevelChunkManager.js';
 import { LevelNVD } from './LevelNVD.js';
@@ -29,7 +29,7 @@ export async function setupEnvironment() {
     const envClassPath = await NVD.load('envClassPath');
     let env;
     if(!envClassPath) {
-        logger.warning('Environment class path not defined, using basic environment');
+        logger.warn('Environment class path not defined, using basic environment');
         env =  new Environment(envUUID);
     } else {
         const {EnvironmentClass} = await import('file:' + envClassPath);
