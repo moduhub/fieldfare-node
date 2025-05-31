@@ -13,11 +13,9 @@ export class WebServerTransceiver extends Transceiver {
 
 	constructor() {
 		super();
-
 		this.server = http.createServer((request, response) => {
 			this.treatHttpRequest(request, response);
 		});
-
 		this.wsServer = new WebSocketServer({
 			httpServer: this.server,
 			// You should not use autoAcceptConnections for production
@@ -27,7 +25,6 @@ export class WebServerTransceiver extends Transceiver {
 			// to accept it.
 			autoAcceptConnections: false
 		});
-
 		this.wsServer.on('request', (request) => {
 
 			logger.log('info', "wsServer onRequest");
@@ -48,11 +45,9 @@ export class WebServerTransceiver extends Transceiver {
 	}
 
 	treatHttpRequest(request, response) {
-
 		logger.log('info', (new Date()) + ' Received request for ' + request.url);
 		response.writeHead(404);
 		response.end();
-
 	}
 
 	originIsAllowed(origin) {
@@ -60,22 +55,16 @@ export class WebServerTransceiver extends Transceiver {
 	}
 
 	treatWsRequest(request) {
-
 		logger.log('info', "Entered treatWsRequest");
-
 		if (!this.originIsAllowed(request.origin)) {
 			// Make sure we only accept requests from an allowed origin
 			request.reject();
 			logger.log('info', (new Date()) + ' Connection from origin ' + request.origin + ' rejected.');
 			return;
 		}
-
-		//Create new channel for this destination
 		try {
-
 			var connection = request.accept('mhnet', request.origin);
 			logger.log('info', (new Date()) + ' Connection from ' + request.origin + 'accepted.');
-
 			var newChannel = {
 				type: 'wsServer',
 				send: (message) => {
@@ -88,52 +77,32 @@ export class WebServerTransceiver extends Transceiver {
 					connection: connection
 				}
 			};
-
 			newChannel.onMessageReceived = (message) => {
 				logger.log('info', "WS connection callback undefined. Message droped: " + message);
 			}
-
 			connection.on('message', (message) => {
-
 				if (message.type === 'utf8') {
-
 					if(newChannel.onMessageReceived) {
-
 						try {
 							//logger.log('info', 'WS: Message from client: ' + message.utf8Data);
-
 							var messageObject = JSON.parse(message.utf8Data);
-
 							newChannel.onMessageReceived(messageObject);
-
 						} catch (error) {
-
 							logger.log('info', "Failed to treat WS message: " + error);
-
 						}
-
 					}
-
 				} else {
-
-					throw 'invalide message format';
-
+					throw 'invalid message format';
 				}
-
 			});
-
 			connection.on('close', function(reasonCode, description) {
-				logger.log('info', (new Date()) + ' Peer ' + connection.remoteAddress + ' disconnected.');
+				logger.log('info', (new Date()) + ' Peer ' + connection.remoteAddress + ' disconnected. Reason: ' + reasonCode + ', Description: ' + description);
 			});
-
 			if(this.onNewChannel) {
 				this.onNewChannel(newChannel);
 			}
-
 		} catch (error) {
-
 			logger.log('info', "Failed to accept connection: " + error);
-
 		}
 	}
 };
