@@ -71,7 +71,9 @@ export class WebServerTransceiver extends Transceiver {
 					var stringifiedMessage = JSON.stringify(message, message.jsonReplacer);
 					connection.send(stringifiedMessage);
 				},
-				active: () => {return true;},
+				active: () => {
+					return connection.connected;
+				},
 				info: {
 					origin: request.origin,
 					connection: connection
