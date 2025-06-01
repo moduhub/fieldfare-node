@@ -6,7 +6,7 @@
  */
 
 import { Transceiver, logger } from '@fieldfare/core';
-import { WebSocketServer } from 'ws';
+import WebSocket, { WebSocketServer } from 'ws';
 
 export class WebServerTransceiver extends Transceiver {
 
