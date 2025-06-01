@@ -22,21 +22,27 @@ export class WebServerTransceiver extends Transceiver {
 		const server = new WebSocketServer({ 
   			port: port
 		});
-		server.on('connection', (socket) => {
+		server.on('connection', (socket, request) => {
     		console.log('Client connected');
 			try {
 				var newChannel = {
 					type: 'wsServer',
 					send: (message) => {
+						if(socket.readyState !== WebSocket.OPEN) {
+							throw Error('Attempt to send data to WebSocket that is not open');
+						}
 						var stringifiedMessage = JSON.stringify(message, message.jsonReplacer);
 						socket.send(stringifiedMessage);
 					},
-					active: () => {
-						return connection.connected;
+					active: () => {		
+						if(socket.readyState !== WebSocket.OPEN) {
+							return false;
+						}
+						return true;
 					},
 					info: {
-						origin: request.origin,
-						connection: connection
+						origin: request.socket.remoteAddress,
+						connection: socket
 					}
 				};
 				newChannel.onMessageReceived = (message) => {
