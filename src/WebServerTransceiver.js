@@ -6,31 +6,12 @@
  */
 
 import { Transceiver, logger } from '@fieldfare/core';
-import { server as WebSocketServer } from 'websocket';
-import http from 'http';
+import { WebSocketServer } from 'ws';
 
 export class WebServerTransceiver extends Transceiver {
 
 	constructor() {
 		super();
-		this.server = http.createServer((request, response) => {
-			this.treatHttpRequest(request, response);
-		});
-		this.wsServer = new WebSocketServer({
-			httpServer: this.server,
-			// You should not use autoAcceptConnections for production
-			// applications, as it defeats all standard cross-origin protection
-			// facilities built into the protocol and the browser.  You should
-			// *always* verify the connection's origin and decide whether or not
-			// to accept it.
-			autoAcceptConnections: false
-		});
-		this.wsServer.on('request', (request) => {
-
-			logger.log('info', "wsServer onRequest");
-
-			this.treatWsRequest(request);
-		});
 	}
 
 	serve(address, port) {
@@ -38,73 +19,54 @@ export class WebServerTransceiver extends Transceiver {
 			throw Error('Cannot serve more than one WS port');
 		}
 		this.port = port;
-		logger.info('Opening WS server port: ' + port)
-		this.server.listen(this.port, () => {
-			logger.log('info', (new Date()) + ' WS Server is listening on port ' + this.port);
+		const server = new WebSocketServer({ 
+  			port: port
 		});
-	}
-
-	treatHttpRequest(request, response) {
-		logger.log('info', (new Date()) + ' Received request for ' + request.url);
-		response.writeHead(404);
-		response.end();
-	}
-
-	originIsAllowed(origin) {
-		return true;
-	}
-
-	treatWsRequest(request) {
-		logger.log('info', "Entered treatWsRequest");
-		if (!this.originIsAllowed(request.origin)) {
-			// Make sure we only accept requests from an allowed origin
-			request.reject();
-			logger.log('info', (new Date()) + ' Connection from origin ' + request.origin + ' rejected.');
-			return;
-		}
-		try {
-			var connection = request.accept('mhnet', request.origin);
-			logger.log('info', (new Date()) + ' Connection from ' + request.origin + 'accepted.');
-			var newChannel = {
-				type: 'wsServer',
-				send: (message) => {
-					var stringifiedMessage = JSON.stringify(message, message.jsonReplacer);
-					connection.send(stringifiedMessage);
-				},
-				active: () => {
-					return connection.connected;
-				},
-				info: {
-					origin: request.origin,
-					connection: connection
-				}
-			};
-			newChannel.onMessageReceived = (message) => {
-				logger.log('info', "WS connection callback undefined. Message droped: " + message);
-			}
-			connection.on('message', (message) => {
-				if (message.type === 'utf8') {
-					if(newChannel.onMessageReceived) {
-						try {
-							//logger.log('info', 'WS: Message from client: ' + message.utf8Data);
-							var messageObject = JSON.parse(message.utf8Data);
-							newChannel.onMessageReceived(messageObject);
-						} catch (error) {
-							logger.log('info', "Failed to treat WS message: " + error);
-						}
+		server.on('connection', (socket) => {
+    		console.log('Client connected');
+			try {
+				var newChannel = {
+					type: 'wsServer',
+					send: (message) => {
+						var stringifiedMessage = JSON.stringify(message, message.jsonReplacer);
+						socket.send(stringifiedMessage);
+					},
+					active: () => {
+						return connection.connected;
+					},
+					info: {
+						origin: request.origin,
+						connection: connection
 					}
-				} else {
-					throw 'invalid message format';
+				};
+				newChannel.onMessageReceived = (message) => {
+					logger.log('info', "WS connection callback undefined. Message droped: " + message);
 				}
-			});
-			connection.on('close', function(reasonCode, description) {
-				logger.log('info', (new Date()) + ' Peer ' + connection.remoteAddress + ' disconnected. Reason: ' + reasonCode + ', Description: ' + description);
-			});
-			if(this.onNewChannel) {
-				this.onNewChannel(newChannel);
+				socket.on('message', (message) => {
+					if (message.type === 'utf8') {
+						if(newChannel.onMessageReceived) {
+							try {
+								//logger.log('info', 'WS: Message from client: ' + message.utf8Data);
+								var messageObject = JSON.parse(message.utf8Data);
+								newChannel.onMessageReceived(messageObject);
+							} catch (error) {
+								logger.log('info', "Failed to treat WS message: " + error);
+							}
+						}
+					} else {
+						throw 'invalid message format';
+					}
+				});
+				socket.on('close', () => {
+					logger.log('info', (new Date()) + ' Peer ' + socket.remoteAddress + ' disconnected.');
+				});
+				if(this.onNewChannel) {
+					this.onNewChannel(newChannel);
+				}
+			} catch (error) {
+				logger.log('info', "Failed to accept connection: " + error);
 			}
-		} catch (error) {
-			logger.log('info', "Failed to accept connection: " + error);
-		}
+		});
+		logger.log('info', (new Date()) + ' WS Server is listening on port ' + this.port);
 	}
 };
